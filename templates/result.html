@@ -20,7 +20,7 @@
   <p><a class="btn" href="{{ url_for('return_page', token=token) }}">Check again</a></p>
 {% elif r.outcome == "NOT_PAID" %}
   <h1>Payment not completed</h1>
-  <div class="notice">The payment did not go through, and you have not been charged.</div>
+  <div class="notice">The payment did not go through, so no tickets were issued.</div>
   {% if again %}
     <p class="muted">Your seats are still held for you for now.</p>
     <form method="post" action="{{ url_for('pay', token=token) }}"><button type="submit">Try payment again</button></form>

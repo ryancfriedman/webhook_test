@@ -147,6 +147,31 @@ class NotPaid(Base):
         self.assertEqual(self.confirm(c).outcome, "PAID")
         self.assertEqual(self.n_tickets(), 3)
 
+    def test_two_declines_in_a_row_then_success_is_one_payment_and_one_set_of_tickets(self):
+        c = new_order()
+        pid = self.pay(c)
+        for _ in range(2):
+            self.fake.set_status(pid, "failed", manual_retry_allowed=True)
+            self.assertEqual(self.confirm(c).outcome, "NOT_PAID")
+            self.assertEqual(self.order(c)[0], "payment_pending")  # still ours, still held
+            self.assertEqual(self.pay(c), pid)                     # the same payment, never a second one
+        self.fake.set_status(pid, "succeeded")
+        self.assertEqual(self.confirm(c).outcome, "PAID")
+        self.assertEqual((len(self.fake.payments), self.n_tickets()), (1, 3))
+        self.assertEqual([p for p in self.fake.posts if p["path"] == "/refunds"], [])
+
+    def test_decline_without_manual_retries_is_a_dead_end_until_the_hold_ends_and_never_a_second_payment(self):
+        c = new_order()
+        pid = self.pay(c)
+        self.fake.set_status(pid, "failed", manual_retry_allowed=False)  # observed live with the profile toggle OFF
+        self.assertEqual(self.confirm(c).outcome, "NOT_PAID")
+        r = self._conn_call(start_payment, self.client, PROD, public_token=c.public_token, return_url=RETURN)
+        self.assertEqual((r.outcome, r.client_secret), ("NOT_PAYABLE", None))
+        self.assertEqual(len(self.fake.payments), 1)
+        set_remaining(c.order_id, -5)  # the hold ends: the seats are free again and the order is labelled
+        self.assertEqual(self.confirm(c).outcome, "NOT_PAID")
+        self.assertEqual(self.order(c)[0], "expired")
+
     def test_hold_over_and_unpaid_marks_the_order_expired_and_frees_the_seats(self):
         c = new_order()
         pid = self.pay(c)

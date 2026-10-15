@@ -139,6 +139,32 @@ class Flow(Web):
         self.assertIn("hold has ended", html)
         self.assertEqual(q("SELECT status FROM orders")[0][0], "expired")
 
+    def test_decline_with_manual_retries_on_serves_the_same_payment_and_secret_again(self):
+        url = self.order_url(self.claim((1,)))
+        first = self.c.post(url + "/pay").get_data(as_text=True)
+        pid = q("SELECT payment_id FROM orders")[0][0]
+        FAKE.set_status(pid, "failed", manual_retry_allowed=True)
+        page = self.c.get(url + "/return").get_data(as_text=True)
+        self.assertIn("Payment not completed", page)
+        self.assertIn("Try payment again", page)
+        again = self.c.post(url + "/pay")
+        self.assertEqual(again.status_code, 200)
+        secret = FAKE.payments[pid]["client_secret"]
+        self.assertIn(secret, first)
+        self.assertIn(secret, again.get_data(as_text=True))
+        self.assertEqual(len(FAKE.payments), 1)
+
+    def test_decline_with_manual_retries_off_shows_the_dead_end_message(self):  # observed live
+        url = self.order_url(self.claim((1,)))
+        self.c.post(url + "/pay")
+        pid = q("SELECT payment_id FROM orders")[0][0]
+        FAKE.set_status(pid, "failed", manual_retry_allowed=False)
+        self.assertIn("Payment not completed", self.c.get(url + "/return").get_data(as_text=True))
+        r = self.c.post(url + "/pay")
+        self.assertEqual(r.status_code, 303)
+        self.assertIn("can no longer take a card", self.c.get(r.headers["Location"]).get_data(as_text=True))
+        self.assertEqual((q("SELECT status FROM orders")[0][0], len(FAKE.payments)), ("payment_pending", 1))
+
     def test_late_success_seat_taken_shows_refund(self):  # test 10 through the web layer
         url_a = self.order_url(self.claim((1, 2)))
         self.c.post(url_a + "/pay")
