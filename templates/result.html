@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Payment status{% endblock %}
+{% block body %}
+{% set again = o and o.status == "payment_pending" and o.remaining > 0 %}
+{% if r.outcome == "PAID" %}
+  <h1>You're going!</h1>
+  <div class="notice good">Payment received. Your tickets are below.</div>
+  {% for code, label in r.tickets %}<div class="ticket"><span>Seat {{ label }}</span><strong>{{ code }}</strong></div>{% endfor %}
+  <p class="muted">Total paid: {{ o.amount | money }} (subtotal {{ o.subtotal | money }} + fee {{ o.fee | money }}). Keep this page's link: it shows your tickets again.</p>
+{% elif r.outcome == "REFUNDED" %}
+  <h1>Your payment was refunded</h1>
+  <div class="notice">Your payment arrived after your hold ended, and at least one of your seats had already been taken. We refunded the full amount, {{ o.amount | money }}, including the fee. Your bank may take a few days to show it.</div>
+  <p><a class="btn" href="{{ url_for('index') }}">Pick seats again</a></p>
+{% elif r.outcome == "REFUND_PENDING" %}
+  <h1>Refund in progress</h1>
+  <div class="notice">Your payment arrived after your hold ended, and at least one of your seats had already been taken. A full refund of {{ o.amount | money }} has been started but is not finished. Reload this page in a minute to check.</div>
+{% elif r.outcome == "PENDING" %}
+  <h1>Payment still processing</h1>
+  <div class="notice">Your bank has not finished yet. No tickets are issued until it does. Reload this page in a few seconds.</div>
+  <p><a class="btn" href="{{ url_for('return_page', token=token) }}">Check again</a></p>
+{% elif r.outcome == "NOT_PAID" %}
+  <h1>Payment not completed</h1>
+  <div class="notice">The payment did not go through, and you have not been charged.</div>
+  {% if again %}
+    <p class="muted">Your seats are still held for you for now.</p>
+    <form method="post" action="{{ url_for('pay', token=token) }}"><button type="submit">Try payment again</button></form>
+  {% else %}
+    <p><a class="btn" href="{{ url_for('index') }}">Pick seats again</a></p>
+  {% endif %}
+{% elif r.outcome == "NO_PAYMENT" %}
+  <h1>No payment yet</h1>
+  <p><a class="btn" href="{{ url_for('order_page', token=token) }}">Back to your order</a></p>
+{% elif r.outcome == "MISMATCH" %}
+  <h1>We could not confirm this payment</h1>
+  <div class="notice">The payment did not match this order, so no tickets were issued.</div>
+{% elif r.outcome == "UNAVAILABLE" %}
+  <h1>We could not check your payment</h1>
+  <div class="notice">The payment service did not answer. Nothing has changed. Please reload in a moment.</div>
+  <p><a class="btn" href="{{ url_for('return_page', token=token) }}">Check again</a></p>
+{% else %}
+  <h1>Something went wrong</h1>
+  <div class="notice">This order is in a state we did not expect. It has been logged.</div>
+{% endif %}
+{% endblock %}

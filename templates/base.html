@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Tickets{% endblock %} - Sample Live Show (demo)</title>
+<style>
+  :root { --fg:#1c1c1e; --bg:#fafaf8; --muted:#5f6368; --line:#d9d9d4; --ok:#1a7f37; --bad:#b42318; --accent:#1d4ed8; }
+  @media (prefers-color-scheme: dark) { :root { --fg:#ececec; --bg:#16161a; --muted:#a0a4ab; --line:#33343a; --ok:#4ade80; --bad:#f87171; --accent:#7aa2ff; } }
+  body { font:16px/1.5 system-ui,sans-serif; color:var(--fg); background:var(--bg); margin:0; }
+  main { max-width:44rem; margin:0 auto; padding:1rem; }
+  .banner { background:#fff3cd; color:#533f03; padding:.5rem 1rem; font-size:.9rem; text-align:center; }
+  h1 { font-size:1.5rem; margin:.5rem 0; } .muted { color:var(--muted); }
+  .grid { display:flex; flex-wrap:wrap; gap:.4rem; margin:.3rem 0 .8rem; }
+  .seat { position:relative; } .seat input { position:absolute; opacity:0; }
+  .seat span { display:block; min-width:3.4rem; padding:.45rem .3rem; text-align:center; border:1px solid var(--line); border-radius:.4rem; }
+  .seat input:checked + span { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .seat input:focus-visible + span { outline:2px solid var(--accent); outline-offset:2px; }
+  .seat.taken span { opacity:.4; text-decoration:line-through; }
+  table { border-collapse:collapse; width:100%; margin:.5rem 0; } td { padding:.25rem 0; } td:last-child { text-align:right; }
+  .total td { font-size:1.4rem; font-weight:700; border-top:1px solid var(--line); padding-top:.5rem; }
+  .fee td { color:var(--muted); font-size:.9rem; }
+  button, .btn { font:inherit; padding:.6rem 1.2rem; border-radius:.4rem; border:0; background:var(--accent); color:#fff; cursor:pointer; text-decoration:none; display:inline-block; }
+  button:disabled { opacity:.5; cursor:default; }
+  .notice { border-left:4px solid var(--bad); padding:.5rem .8rem; margin:.8rem 0; background:rgba(180,35,24,.08); }
+  .good { border-left-color:var(--ok); background:rgba(26,127,55,.08); }
+  .ticket { border:1px dashed var(--line); padding:.5rem .8rem; margin:.4rem 0; display:flex; justify-content:space-between; font-variant-numeric:tabular-nums; }
+  #payment-message { color:var(--bad); min-height:1.4rem; }
+</style>
+</head>
+<body>
+<div class="banner">Sandbox demo. Test mode only: no real cards, no real money, no real tickets.</div>
+<main>{% block body %}{% endblock %}</main>
+</body>
+</html>

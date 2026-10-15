@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Your order{% endblock %}
+{% block body %}
+<h1>{{ o.event }}</h1>
+<p class="muted">{{ o.venue }} &middot; {{ o.starts_at | event_time }}</p>
+{% if notice %}<div class="notice" role="alert">{{ notice }}</div>{% endif %}
+
+<table>
+  {% for label, price in o.seats %}<tr><td>Seat {{ label }}</td><td>{{ price | money }}</td></tr>{% endfor %}
+  <tr><td>Subtotal</td><td>{{ o.subtotal | money }}</td></tr>
+  <tr class="fee"><td>Service fee (3% + $0.50)</td><td>{{ o.fee | money }}</td></tr>
+  <tr class="total"><td>Total</td><td>{{ o.amount | money }}</td></tr>
+</table>
+
+{% if o.status in ("held", "payment_pending") and o.remaining > 0 %}
+  <p id="countdown" class="muted" data-remaining="{{ o.remaining }}">Your seats are held for {{ o.remaining // 60 }}:{{ '%02d' % (o.remaining % 60) }}.</p>
+  <form method="post" action="{{ url_for('pay', token=token) }}">
+    <button type="submit" id="pay-button">{{ "Continue to payment" if o.status == "payment_pending" else "Pay " ~ (o.amount | money) }}</button>
+  </form>
+  {% if o.status == "payment_pending" %}<p><a href="{{ url_for('return_page', token=token) }}">Check my payment status</a></p>{% endif %}
+  <script>
+    // Display only. The server decides when the hold ends, by the database clock.
+    (function () {
+      var el = document.getElementById("countdown");
+      var left = parseInt(el.dataset.remaining, 10);
+      setInterval(function () {
+        left = Math.max(0, left - 1);
+        el.textContent = left > 0 ? "Your seats are held for " + Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0") + "." : "The hold has ended. The server will confirm.";
+      }, 1000);
+    })();
+  </script>
+{% else %}
+  <div class="notice">{{ "This order was cancelled." if o.status == "cancelled" else "This hold has ended. The seats were released." }}</div>
+  <p><a class="btn" href="{{ url_for('index') }}">Pick seats again</a></p>
+{% endif %}
+{% endblock %}

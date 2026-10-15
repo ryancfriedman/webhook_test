@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Choose seats{% endblock %}
+{% block body %}
+<h1>{{ event[1] }}</h1>
+<p class="muted">{{ event[2] }} &middot; {{ event[3] | event_time }}</p>
+{% if message %}<div class="notice" role="alert">{{ message }}</div>{% endif %}
+<form method="post" action="{{ url_for('claim_route') }}">
+  <input type="hidden" name="client_token" value="{{ client_token }}">
+  <input type="hidden" name="event_id" value="{{ event[0] }}">
+  {% for row, seats in rows.items() %}
+    <p><strong>Row {{ row }}</strong> <span class="muted">{{ seats[0].price | money }} each</span></p>
+    <div class="grid">
+      {% for s in seats %}
+        <label class="seat {{ '' if s.free else 'taken' }}">
+          <input type="checkbox" name="seat" value="{{ s.id }}" {{ '' if s.free else 'disabled' }}>
+          <span>{{ s.label }}</span>
+        </label>
+      {% endfor %}
+    </div>
+  {% endfor %}
+  <p class="muted">Up to {{ max_seats }} seats. Seats are held for a few minutes while you pay. A service fee is added and shown before you pay.</p>
+  <button type="submit">Hold these seats</button>
+</form>
+{% endblock %}

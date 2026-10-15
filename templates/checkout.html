@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Payment{% endblock %}
+{% block body %}
+<h1>Pay {{ o.amount | money }}</h1>
+<p class="muted">{{ o.seats | length }} seat(s) &middot; subtotal {{ o.subtotal | money }} + service fee {{ o.fee | money }}</p>
+<p class="muted">Test card: 4242 4242 4242 4242, any future date, any 3-digit code. Decline test: 4000 0000 0000 0002.</p>
+<form id="payment-form">
+  <div id="unified-checkout"></div>
+  <button id="submit" type="submit">Pay {{ o.amount | money }}</button>
+  <div id="payment-message" role="alert"></div>
+</form>
+<p><a href="{{ url_for('return_page', token=token) }}">Check my payment status</a></p>
+<script src="{{ sdk_url }}"></script>
+<script>
+  (function () {
+    var msg = document.getElementById("payment-message");
+    var btn = document.getElementById("submit");
+    function show(text) { msg.textContent = text; }
+    if (!window.Hyper) { show("The payment form could not be loaded. Nothing was charged. Please reload."); btn.disabled = true; return; }
+    var hyper = window.Hyper({{ publishable_key | tojson }}{% if backend_url %}, { customBackendUrl: {{ backend_url | tojson }} }{% endif %});
+    var widgets = hyper.widgets({ clientSecret: {{ client_secret | tojson }} });
+    widgets.create("payment", { layout: "tabs" }).mount("#unified-checkout");
+    document.getElementById("payment-form").addEventListener("submit", async function (ev) {
+      ev.preventDefault();
+      btn.disabled = true; show("");
+      var result = await hyper.confirmPayment({ widgets: widgets, confirmParams: { return_url: {{ return_url | tojson }} }, redirect: "always" });
+      var error = result && result.error;
+      if (error) { show(error.message || "Your payment did not go through. Nothing was charged. You can try another card."); }
+      btn.disabled = false;
+    });
+  })();
+</script>
+{% endblock %}
